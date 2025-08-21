@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Журнал оперативных событий</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://jen9-ops.github.io/library/script.js"></script>
-    <link rel="stylesheet" href="https://jen9-ops.github.io/library/style.css">
     <style>
         * {
             margin: 0;
@@ -129,7 +128,13 @@
             font-weight: 600;
         }
 
-        .main-button:hover, .main-button:active {
+        .events-button:hover, .events-button:active {
+            background-color: #e6e6e6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .export-button:hover, .export-button:active {
             background-color: #e6e6e6;
             transform: translateY(-2px);
             box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
@@ -253,13 +258,35 @@
             width: 100%;
             font-weight: 600;
         }
-        .add-btn:disabled {
-            background: #aaa;
-            cursor: not-allowed;
-        }
 
         .add-btn:hover, .add-btn:active {
             background: #e6e6e6;
+        }
+
+        .calculation-section {
+            display: none;
+            background-color: #3d3d3d;
+            border-left: 5px solid #4e89e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .calculation-result {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .result-item {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .result-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ffffff;
         }
 
         .events-table-container {
@@ -297,8 +324,123 @@
         tr:hover {
             background-color: #4d4d4d;
         }
-         /* Медиа-запросы */
+
+        .timestamp {
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        .time-diff {
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .distance-info {
+            font-weight: bold;
+            color: #4e89e8;
+        }
+
+        /* Медиа-запросы для адаптивности */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            .position-info h2 {
+                font-size: 1.3rem;
+            }
+            
+            .modal-content {
+                padding: 15px;
+                margin: 5% auto;
+                width: 100%;
+            }
+            
+            .form-section {
+                padding: 12px;
+            }
+            
+            h2 {
+                font-size: 1.3rem;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+                font-size: 0.85rem;
+            }
+            
+            .main-button {
+                padding: 12px 20px;
+                font-size: 1rem;
+                min-width: 160px;
+            }
+        }
+
         @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+            
+            .container {
+                padding: 12px;
+            }
+            
+            h1 {
+                font-size: 1.4rem;
+            }
+            
+            .version {
+                font-size: 0.9rem;
+            }
+            
+            .position-info h2 {
+                font-size: 1.2rem;
+            }
+            
+            .position-info .date {
+                font-size: 0.9rem;
+            }
+            
+            .modal-content {
+                padding: 12px;
+            }
+            
+            .form-section {
+                padding: 10px;
+            }
+            
+            h2 {
+                font-size: 1.2rem;
+            }
+            
+            th, td {
+                padding: 6px 8px;
+                font-size: 0.8rem;
+            }
+            
+            select, input, textarea {
+                padding: 8px;
+                font-size: 16px;
+            }
+            
+            .main-button {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+                min-width: 140px;
+            }
+            
+            .add-btn {
+                padding: 10px 15px;
+            }
+
             .controls {
                 flex-direction: column;
                 align-items: stretch;
@@ -310,7 +452,7 @@
     <div class="container">
         <header>
             <h1>Журнал оперативных событий</h1>
-            <div class="version">Версия: 2.0 (DB) | Дата: 18.08.2025</div>
+            <div class="version">Версия: 1.3 | Дата: 18.08.2025</div>
         </header>
 
         <div class="position-info">
@@ -336,6 +478,7 @@
         </div>
     </div>
 
+    <!-- Модальное окно журнала событий -->
     <div id="eventsModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -348,7 +491,6 @@
                         <option value="">-- Оберіть тип події --</option>
                         <option value="Скид">Скид</option>
                         <option value="Мінометний обстріл">Мінометний обстріл</option>
-                         <option value="Інше">Інше</option>
                     </select>
                 </div>
                 
@@ -365,21 +507,37 @@
                 <button class="add-btn" id="addRecordBtn"><i class="fas fa-plus"></i> Додати запис</button>
             </div>
             
+            <div class="calculation-section" id="calculationSection">
+                <h2><i class="fas fa-calculator"></i> Результат розрахунку</h2>
+                <div class="calculation-result">
+                    <div class="result-item">
+                        <label>Приблизна відстань:</label>
+                        <div class="result-value" id="distanceResult">-- км</div>
+                    </div>
+                    <div class="result-item">
+                        <label>За азимутом:</label>
+                        <div class="result-value" id="azimuthResult">--</div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="events-section">
                 <h2><i class="fas fa-table"></i> Отображение событий</h2>
                 <div class="events-table-container">
                     <table id="eventsTable">
                         <thead>
                             <tr>
-                                <th>Час події</th>
                                 <th>Тип події</th>
-                                <th>Азимут</th>
                                 <th>Коментар</th>
-                                <th>Зміна</th>
+                                <th>Азимут</th>
+                                <th>Час події</th>
+                                <th>Час між подіями</th>
+                                <th>Дистанція</th>
                             </tr>
                         </thead>
                         <tbody>
-                            </tbody>
+                            <!-- Данные будут добавляться через JavaScript -->
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -387,154 +545,54 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // --- ВАШ URL ДЛЯ GOOGLE APPS SCRIPT ---
-            const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznwcTPfzDGssAVed4qb7iuwOaA29xLTaj43Vw9yljgNWGxKvk1LrWNqlpfx17wpe7l/exec';
+        // Предотвращение масштабирования жестом pinch-zoom
+        document.addEventListener('touchmove', function (event) {
+            if (event.scale !== 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
 
+        document.addEventListener('DOMContentLoaded', function() {
             // Элементы DOM
             const eventsBtn = document.getElementById('eventsBtn');
             const exportBtn = document.getElementById('exportBtn');
             const eventsModal = document.getElementById('eventsModal');
             const closeButtons = document.querySelectorAll('.close');
             const addRecordBtn = document.getElementById('addRecordBtn');
+            const eventsTable = document.getElementById('eventsTable').getElementsByTagName('tbody')[0];
             const currentDateElement = document.getElementById('currentDate');
-            const eventsTableBody = document.getElementById('eventsTable').getElementsByTagName('tbody')[0];
-
+            const shiftSelect = document.getElementById('shiftSelect');
+            const calculationSection = document.getElementById('calculationSection');
+            const distanceResult = document.getElementById('distanceResult');
+            const azimuthResult = document.getElementById('azimuthResult');
+            
+            // Константы для расчета
+            const Vm = 211; // Средняя скорость минометного снаряда (м/с)
+            const Vs = 343; // Скорость звука (м/с)
+            
             // Установка текущей даты
             const now = new Date();
             const formattedDate = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
             currentDateElement.textContent = `Дата: ${formattedDate}`;
-
-            // --- ФУНКЦИЯ ЗАГРУЗКИ ДАННЫХ ИЗ GOOGLE SHEETS ---
-            function loadEventsFromSheet() {
-                eventsTableBody.innerHTML = '<tr><td colspan="5">Завантаження даних...</td></tr>';
-
-                fetch(APPS_SCRIPT_URL)
-                    .then(response => response.json())
-                    .then(data => {
-                        eventsTableBody.innerHTML = ''; 
-
-                        if (data.length === 0) {
-                            eventsTableBody.innerHTML = '<tr><td colspan="5">Записів ще немає.</td></tr>';
-                            return;
-                        }
-                        
-                        data.reverse().forEach(event => {
-                            const row = eventsTableBody.insertRow();
-                            const eventTime = new Date(event.timestamp);
-
-                            row.insertCell(0).textContent = eventTime.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-                            row.insertCell(1).textContent = event.eventType;
-                            row.insertCell(2).textContent = event.azimuth;
-                            row.insertCell(3).textContent = event.comment;
-                            row.insertCell(4).textContent = event.shift;
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Ошибка загрузки данных:', error);
-                        eventsTableBody.innerHTML = '<tr><td colspan="5">Не вдалося завантажити дані. Перевірте консоль.</td></tr>';
-                    });
-            }
-
-            // --- ФУНКЦИЯ ОТПРАВКИ ДАННЫХ В GOOGLE SHEETS ---
-            addRecordBtn.addEventListener('click', function() {
-                const eventType = document.getElementById('eventType').value;
-                const azimuth = document.getElementById('azimuth').value || '—';
-                const comment = document.getElementById('comment').value || '—';
-                const currentShift = document.getElementById('shiftSelect').value;
-
-                if (!eventType) {
-                    alert('Будь ласка, оберіть тип події!');
-                    return;
-                }
-
-                const dataToSend = {
-                    eventType: eventType,
-                    azimuth: azimuth,
-                    comment: comment,
-                    shift: currentShift
-                };
-
-                addRecordBtn.disabled = true;
-                addRecordBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Зберігаємо...';
-
-                fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(dataToSend),
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.status === 'success') {
-                        document.getElementById('eventType').value = '';
-                        document.getElementById('azimuth').value = '';
-                        document.getElementById('comment').value = '';
-                        loadEventsFromSheet();
-                    } else {
-                        alert('Сталася помилка: ' + result.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка отправки:', error);
-                    alert('Не вдалося відправити дані. Перевірте консоль.');
-                })
-                .finally(() => {
-                    addRecordBtn.disabled = false;
-                    addRecordBtn.innerHTML = '<i class="fas fa-plus"></i> Додати запис';
-                });
-            });
             
-            // --- ЭКСПОРТ В PDF ---
-            exportBtn.addEventListener('click', function() {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                
-                doc.addFont('//fonts.gstatic.com/s/robotoserif/v14/R71Rjcwflz0e5S3O-QPJ3AaV7w1-p832pQ.ttf', 'Roboto', 'normal');
-                doc.setFont('Roboto');
-                
-                const shift = document.getElementById('shiftSelect').value;
-                doc.setFontSize(16);
-                doc.text('Журнал оперативных событий', 105, 15, { align: 'center' });
-                doc.setFontSize(12);
-                doc.text(`Позиция: Sultan | Зміна: ${shift} | Дата: ${formattedDate}`, 105, 22, { align: 'center' });
-
-                doc.autoTable({
-                    html: '#eventsTable',
-                    startY: 30,
-                    theme: 'grid',
-                    styles: { 
-                        font: 'Roboto', 
-                        fontStyle: 'normal'
-                    },
-                    headStyles: { 
-                        fillColor: [78, 137, 232],
-                    }
-                });
-                
-                doc.save(`Журнал_Sultan_${shift}_${formattedDate}.pdf`);
-            });
-
-            // --- ОБРАБОТЧИКИ МОДАЛЬНЫХ ОКОН ---
-            eventsBtn.addEventListener('click', function() {
-                eventsModal.style.display = 'block';
-                loadEventsFromSheet();
-            });
-
-            closeButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    this.closest('.modal').style.display = 'none';
-                });
-            });
-
-            window.addEventListener('click', function(event) {
-                if (event.target == eventsModal) {
-                    eventsModal.style.display = 'none';
-                }
-            });
-        });
-    </script>
-</body>
-</html>
-                return `${hours} год ${minutes} хв`;
+            // Переменные состояния
+            let events = [];
+            let lastMortarEvent = null;
+            let inMortarSequence = false;
+            let currentShift = "Честер";
+            
+            // Функция форматирования времени
+            function formatTimeDiff(seconds) {
+                if (seconds < 60) {
+                    return `${seconds} сек`;
+                } else if (seconds < 3600) {
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = seconds % 60;
+                    return `${minutes} хв ${remainingSeconds} сек`;
+                } else if (seconds < 86400) {
+                    const hours = Math.floor(seconds / 3600);
+                    const minutes = Math.floor((seconds % 3600) / 60);
+                    return `${hours} год ${minutes} хв`;
                 } else {
                     const days = Math.floor(seconds / 86400);
                     const hours = Math.floor((seconds % 86400) / 3600);
