@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0>
     <title>Журнал оперативных событий</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -452,7 +452,7 @@
     <div class="container">
         <header>
             <h1>Журнал оперативных событий</h1>
-            <div class="version">Версия: 1.3 | Дата: 18.08.2025</div>
+            <div class="version">Версия: 1.4 | Дата: 18.08.2025</div>
         </header>
 
         <div class="position-info">
@@ -463,13 +463,14 @@
                 <select id="shiftSelect">
                     <option value="Честер">Честер</option>
                     <option value="Козак">Козак</option>
-                    <option value="Інша">Інша</option>
+                    
                 </select>
             </div>
         </div>
 
         <div class="controls">
             <button class="main-button events-button" id="eventsBtn">
+                <button class="add-btn" id="addRecordBtn"><i class="fas fa-plus"></i> Додати запис</button>
                 <i class="fas fa-book"></i> Журнал событий
             </button>
             <button class="main-button export-button" id="exportBtn">
@@ -488,15 +489,15 @@
                 <div class="form-group">
                     <label for="eventType">Тип події:</label>
                     <select id="eventType" required>
-                        <option value="">-- Оберіть тип події --</option>
-                        <option value="Скид">Скид</option>
                         <option value="Мінометний обстріл">Мінометний обстріл</option>
+                        <option value="Скид">Скид</option>
+                        
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="azimuth">Азимут (необов'язково):</label>
-                    <input type="number" id="azimuth" min="0" max="360" placeholder="Введіть азимут (0-360)">
+                    <input type="number" id="azimuth" min="0" max="360" placeholder="Введіть азимут (0-360°)">
                 </div>
                 
                 <div class="form-group">
@@ -529,7 +530,7 @@
                             <tr>
                                 <th>Тип події</th>
                                 <th>Коментар</th>
-                                <th>Азимут</th>
+                                <th>Азимут°</th>
                                 <th>Час події</th>
                                 <th>Час між подіями</th>
                                 <th>Дистанція</th>
@@ -546,11 +547,11 @@
 
     <script>
         // Предотвращение масштабирования жестом pinch-zoom
-        document.addEventListener('touchmove', function (event) {
-            if (event.scale !== 1) {
-                event.preventDefault();
-            }
-        }, { passive: false });
+     //   document.addEventListener('touchmove', function (event) {
+       //     if (event.scale !== 1) {
+           //     event.preventDefault();
+         //   }
+    //    }, { passive: false });
 
         document.addEventListener('DOMContentLoaded', function() {
             // Элементы DOM
@@ -702,7 +703,7 @@
                 
                 // Создаем таблицу в PDF
                 doc.autoTable({
-                    head: [['Тип події', 'Коментар', 'Азимут', 'Час події', 'Час між подіями', 'Дистанція']],
+                    head: [['Тип події', 'Коментар', 'Азимут°', 'Час події', 'Час між подіями', 'Дистанція']],
                     body: tableData,
                     startY: 30,
                     theme: 'grid',
