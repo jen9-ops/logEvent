@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Журнал оперативных событий</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://jen9-ops.github.io/library/script.js"></script>
+    <link rel="stylesheet" href="https://jen9-ops.github.io/library/style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        body {
+            min-height: 100vh;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #e0e0e0;
+            width: 100%;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #333;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .version {
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+
+        .position-info {
+            text-align: center;
+            background-color: #2d2d2d;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #e0e0e0;
+            border: 1px solid #444;
+        }
+
+        .position-info h2 {
+            margin-bottom: 5px;
+            font-size: 1.5rem;
+            color: #ffffff;
+        }
+
+        .position-info .date {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .shift-selector {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .shift-selector select {
+            padding: 8px 12px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 16px;
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .main-button {
+            background-color: #ffffff;
+            color: #121212;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 200px;
+            font-weight: 600;
+        }
+
+        .main-button:hover, .main-button:active {
+            background-color: #e6e6e6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            overflow: auto;
+            padding: 15px;
+        }
+
+        .modal-content {
+            background-color: #2d2d2d;
+            margin: 2% auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            animation: modalFade 0.3s;
+            color: #e0e0e0;
+        }
+
+        @keyframes modalFade {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 10;
+        }
+
+        .close:hover {
+            color: #fff;
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #3d3d3d;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            margin-bottom: 12px;
+            color: #ffffff;
+            border-bottom: 2px solid #444;
+            padding-bottom: 8px;
+            font-size: 1.4rem;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #e0e0e0;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            max-width: 100%;
+            -webkit-appearance: none;
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            border-color: #4e89e8;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(78, 137, 232, 0.3);
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .add-btn {
+            background: #ffffff;
+            color: #121212;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+            font-weight: 600;
+        }
+        .add-btn:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+
+        .add-btn:hover, .add-btn:active {
+            background: #e6e6e6;
+        }
+
+        .events-table-container {
+            overflow-x: auto;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            background-color: #2d2d2d;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: #4e89e8;
+            color: white;
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+        }
+
+        tr:nth-child(even) {
+            background-color: #3d3d3d;
+        }
+
+        tr:hover {
+            background-color: #4d4d4d;
+        }
+         /* Медиа-запросы */
+        @media (max-width: 480px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Журнал оперативных событий</h1>
+            <div class="version">Версия: 2.0 (DB) | Дата: 18.08.2025</div>
+        </header>
+
+        <div class="position-info">
+            <h2>Позиция: Sultan</h2>
+            <div class="date" id="currentDate"></div>
+            <div class="shift-selector">
+                <label for="shiftSelect">Зміна:</label>
+                <select id="shiftSelect">
+                    <option value="Честер">Честер</option>
+                    <option value="Козак">Козак</option>
+                    <option value="Інша">Інша</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="main-button events-button" id="eventsBtn">
+                <i class="fas fa-book"></i> Журнал событий
+            </button>
+            <button class="main-button export-button" id="exportBtn">
+                <i class="fas fa-file-pdf"></i> Экспорт в PDF
+            </button>
+        </div>
+    </div>
+
+    <div id="eventsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            
+            <div class="form-section">
+                <h2><i class="fas fa-pencil-alt"></i> Ввод событий</h2>
+                <div class="form-group">
+                    <label for="eventType">Тип події:</label>
+                    <select id="eventType" required>
+                        <option value="">-- Оберіть тип події --</option>
+                        <option value="Скид">Скид</option>
+                        <option value="Мінометний обстріл">Мінометний обстріл</option>
+                         <option value="Інше">Інше</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="azimuth">Азимут (необов'язково):</label>
+                    <input type="number" id="azimuth" min="0" max="360" placeholder="Введіть азимут (0-360)">
+                </div>
+                
+                <div class="form-group">
+                    <label for="comment">Коментар (необов'язково):</label>
+                    <textarea id="comment" placeholder="Введіть коментар..."></textarea>
+                </div>
+                
+                <button class="add-btn" id="addRecordBtn"><i class="fas fa-plus"></i> Додати запис</button>
+            </div>
+            
+            <div class="events-section">
+                <h2><i class="fas fa-table"></i> Отображение событий</h2>
+                <div class="events-table-container">
+                    <table id="eventsTable">
+                        <thead>
+                            <tr>
+                                <th>Час події</th>
+                                <th>Тип події</th>
+                                <th>Азимут</th>
+                                <th>Коментар</th>
+                                <th>Зміна</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- ВАШ URL ДЛЯ GOOGLE APPS SCRIPT ---
+            const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznwcTPfzDGssAVed4qb7iuwOaA29xLTaj43Vw9yljgNWGxKvk1LrWNqlpfx17wpe7l/exec';
+
+            // Элементы DOM
+            const eventsBtn = document.getElementById('eventsBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const eventsModal = document.getElementById('eventsModal');
+            const closeButtons = document.querySelectorAll('.close');
+            const addRecordBtn = document.getElementById('addRecordBtn');
+            const currentDateElement = document.getElementById('currentDate');
+            const eventsTableBody = document.getElementById('eventsTable').getElementsByTagName('tbody')[0];
+
+            // Установка текущей даты
+            const now = new Date();
+            const formattedDate = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+            currentDateElement.textContent = `Дата: ${formattedDate}`;
+
+            // --- ФУНКЦИЯ ЗАГРУЗКИ ДАННЫХ ИЗ GOOGLE SHEETS ---
+            function loadEventsFromSheet() {
+                eventsTableBody.innerHTML = '<tr><td colspan="5">Завантаження даних...</td></tr>';
+
+                fetch(APPS_SCRIPT_URL)
+                    .then(response => response.json())
+                    .then(data => {
+                        eventsTableBody.innerHTML = ''; 
+
+                        if (data.length === 0) {
+                            eventsTableBody.innerHTML = '<tr><td colspan="5">Записів ще немає.</td></tr>';
+                            return;
+                        }
+                        
+                        data.reverse().forEach(event => {
+                            const row = eventsTableBody.insertRow();
+                            const eventTime = new Date(event.timestamp);
+
+                            row.insertCell(0).textContent = eventTime.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+                            row.insertCell(1).textContent = event.eventType;
+                            row.insertCell(2).textContent = event.azimuth;
+                            row.insertCell(3).textContent = event.comment;
+                            row.insertCell(4).textContent = event.shift;
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Ошибка загрузки данных:', error);
+                        eventsTableBody.innerHTML = '<tr><td colspan="5">Не вдалося завантажити дані. Перевірте консоль.</td></tr>';
+                    });
+            }
+
+            // --- ФУНКЦИЯ ОТПРАВКИ ДАННЫХ В GOOGLE SHEETS ---
+            addRecordBtn.addEventListener('click', function() {
+                const eventType = document.getElementById('eventType').value;
+                const azimuth = document.getElementById('azimuth').value || '—';
+                const comment = document.getElementById('comment').value || '—';
+                const currentShift = document.getElementById('shiftSelect').value;
+
+                if (!eventType) {
+                    alert('Будь ласка, оберіть тип події!');
+                    return;
+                }
+
+                const dataToSend = {
+                    eventType: eventType,
+                    azimuth: azimuth,
+                    comment: comment,
+                    shift: currentShift
+                };
+
+                addRecordBtn.disabled = true;
+                addRecordBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Зберігаємо...';
+
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(dataToSend),
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        document.getElementById('eventType').value = '';
+                        document.getElementById('azimuth').value = '';
+                        document.getElementById('comment').value = '';
+                        loadEventsFromSheet();
+                    } else {
+                        alert('Сталася помилка: ' + result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка отправки:', error);
+                    alert('Не вдалося відправити дані. Перевірте консоль.');
+                })
+                .finally(() => {
+                    addRecordBtn.disabled = false;
+                    addRecordBtn.innerHTML = '<i class="fas fa-plus"></i> Додати запис';
+                });
+            });
+            
+            // --- ЭКСПОРТ В PDF ---
+            exportBtn.addEventListener('click', function() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                doc.addFont('//fonts.gstatic.com/s/robotoserif/v14/R71Rjcwflz0e5S3O-QPJ3AaV7w1-p832pQ.ttf', 'Roboto', 'normal');
+                doc.setFont('Roboto');
+                
+                const shift = document.getElementById('shiftSelect').value;
+                doc.setFontSize(16);
+                doc.text('Журнал оперативных событий', 105, 15, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(`Позиция: Sultan | Зміна: ${shift} | Дата: ${formattedDate}`, 105, 22, { align: 'center' });
+
+                doc.autoTable({
+                    html: '#eventsTable',
+                    startY: 30,
+                    theme: 'grid',
+                    styles: { 
+                        font: 'Roboto', 
+                        fontStyle: 'normal'
+                    },
+                    headStyles: { 
+                        fillColor: [78, 137, 232],
+                    }
+                });
+                
+                doc.save(`Журнал_Sultan_${shift}_${formattedDate}.pdf`);
+            });
+
+            // --- ОБРАБОТЧИКИ МОДАЛЬНЫХ ОКОН ---
+            eventsBtn.addEventListener('click', function() {
+                eventsModal.style.display = 'block';
+                loadEventsFromSheet();
+            });
+
+            closeButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.modal').style.display = 'none';
+                });
+            });
+
+            window.addEventListener('click', function(event) {
+                if (event.target == eventsModal) {
+                    eventsModal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+                return `${hours} год ${minutes} хв`;
+                } else {
+                    const days = Math.floor(seconds / 86400);
+                    const hours = Math.floor((seconds % 86400) / 3600);
+                    return `${days} дн ${hours} год`;
+                }
+            }
+            
+            // Функция расчета дистанции
+            function calculateDistance(timeDiff) {
+                // Формула: D = t * (Vm * Vs) / (Vs - Vm) / 1000 (км)
+                return (timeDiff * (Vm * Vs) / (Vs - Vm)) / 1000;
+            }
+            
+            // Загрузка данных из localStorage
+            function loadFromLocalStorage() {
+                const savedData = localStorage.getItem('eventsData');
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    events = parsedData.events.map(event => {
+                        return {
+                            ...event,
+                            time: new Date(event.time)
+                        };
+                    });
+                    lastMortarEvent = parsedData.lastMortarEvent ? new Date(parsedData.lastMortarEvent) : null;
+                    inMortarSequence = parsedData.inMortarSequence || false;
+                    
+                    // Загрузка выбранной смены
+                    if (parsedData.currentShift) {
+                        currentShift = parsedData.currentShift;
+                        shiftSelect.value = currentShift;
+                    }
+                    
+                    updateEventsTable();
+                }
+            }
+            
+            // Сохранение данных в localStorage
+            function saveToLocalStorage() {
+                const dataToSave = {
+                    events: events.map(event => {
+                        return {
+                            ...event,
+                            time: event.time instanceof Date ? event.time.toISOString() : event.time
+                        };
+                    }),
+                    lastMortarEvent: lastMortarEvent instanceof Date ? lastMortarEvent.toISOString() : lastMortarEvent,
+                    inMortarSequence: inMortarSequence,
+                    currentShift: currentShift
+                };
+                localStorage.setItem('eventsData', JSON.stringify(dataToSave));
+            }
+            
+            // Обработчик изменения смены
+            shiftSelect.addEventListener('change', function() {
+                currentShift = this.value;
+                saveToLocalStorage();
+            });
+            
+            // Открытие модальных окон
+            eventsBtn.addEventListener('click', function() {
+                eventsModal.style.display = 'block';
+            });
+            
+            // Закрытие модальных окон
+            closeButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    eventsModal.style.display = 'none';
+                });
+            });
+            
+            // Закрытие модальных окон при клике вне их
+            window.addEventListener('click', function(event) {
+                if (event.target == eventsModal) {
+                    eventsModal.style.display = 'none';
+                }
+            });
+            
+            // Экспорт в PDF
+            exportBtn.addEventListener('click', function() {
+                // Используем jsPDF из глобальной области
+                const { jsPDF } = window.jspdf;
+                
+                // Создаем новый документ PDF
+                const doc = new jsPDF();
+                
+                // Заголовок с информацией о смене
+                doc.setFontSize(16);
+                doc.text('Журнал оперативных событий', 105, 15, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(`Позиция: Sultan | Зміна: ${currentShift} | Дата: ${formattedDate}`, 105, 22, { align: 'center' });
+                
+                // Подготавливаем данные для таблицы
+                const tableData = [];
+                events.forEach(event => {
+                    if (!event.isDivider) {
+                        tableData.push([
+                            event.type,
+                            event.comment,
+                            event.azimuth,
+                            event.timeString,
+                            event.timeDiff,
+                            event.distance || '—'
+                        ]);
+                    }
+                });
+                
+                // Создаем таблицу в PDF
+                doc.autoTable({
+                    head: [['Тип події', 'Коментар', 'Азимут', 'Час події', 'Час між подіями', 'Дистанція']],
+                    body: tableData,
+                    startY: 30,
+                    theme: 'grid',
+                    styles: { 
+                        fontSize: 8,
+                        cellPadding: 3,
+                        overflow: 'linebreak'
+                    },
+                    headStyles: { 
+                        fillColor: [78, 137, 232],
+                        textColor: 255
+                    },
+                    alternateRowStyles: {
+                        fillColor: [240, 240, 240]
+                    }
+                });
+                
+                // Сохраняем PDF
+                doc.save(`Журнал_событий_Sultan_${currentShift}_${formattedDate}.pdf`);
+            });
+            
+            // Добавление записи
+            addRecordBtn.addEventListener('click', function() {
+                const eventType = document.getElementById('eventType').value;
+                const azimuth = document.getElementById('azimuth').value;
+                const comment = document.getElementById('comment').value;
+                
+                if (!eventType) {
+                    alert('Будь ласка, оберіть тип події!');
+                    return;
+                }
+                
+                const currentTime = new Date();
+                const timeString = currentTime.toLocaleTimeString('uk-UA');
+                
+                // Рассчет времени между событиями
+                let timeDiff = '—';
+                let timeDiffInSec = 0;
+                let distance = '—';
+                
+                if (events.length > 0) {
+                    const lastEvent = events[0];
+                    const diffInMs = currentTime - lastEvent.time;
+                    timeDiffInSec = Math.floor(diffInMs / 1000);
+                    timeDiff = formatTimeDiff(timeDiffInSec);
+                }
+                
+                // Создание объекта события
+                const event = {
+                    type: eventType,
+                    azimuth: azimuth || '—',
+                    comment: comment || '—',
+                    time: currentTime,
+                    timeString: timeString,
+                    timeDiff: timeDiff,
+                    distance: distance
+                };
+                
+                // Обработка логики для минометных обстрелов
+                if (eventType === 'Мінометний обстріл') {
+                    if (lastMortarEvent) {
+                        // Расчет расстояния
+                        const timeDiffInSec = (currentTime - lastMortarEvent) / 1000;
+                        const calculatedDistance = calculateDistance(timeDiffInSec);
+                        event.distance = `${calculatedDistance.toFixed(2)} км`;
+                        
+                        // Отображение результатов
+                        distanceResult.textContent = event.distance;
+                        azimuthResult.textContent = azimuth || '—';
+                        calculationSection.style.display = 'block';
+                    }
+                    
+                    lastMortarEvent = currentTime;
+                    inMortarSequence = true;
+                } else {
+                    // Если это не минометный обстрел, проверяем, прерываем ли мы последовательность
+                    if (inMortarSequence) {
+                        // Добавляем разделитель
+                        events.unshift({
+                            isDivider: true
+                        });
+                        inMortarSequence = false;
+                    }
+                    calculationSection.style.display = 'none';
+                }
+                
+                // Добавление события в начало массива (для сортировки новых сверху)
+                events.unshift(event);
+                
+                // Очистка формы
+                document.getElementById('eventType').value = '';
+                document.getElementById('azimuth').value = '';
+                document.getElementById('comment').value = '';
+                
+                // Обновление таблицы
+                updateEventsTable();
+                
+                // Сохранение в localStorage
+                saveToLocalStorage();
+            });
+            
+            // Обновление таблицы событий
+            function updateEventsTable() {
+                eventsTable.innerHTML = '';
+                
+                events.forEach(event => {
+                    if (event.isDivider) {
+                        // Добавление разделителя
+                        const dividerRow = eventsTable.insertRow();
+                        dividerRow.className = 'divider-row';
+                        const cell = dividerRow.insertCell(0);
+                        cell.colSpan = 6;
+                        cell.textContent = '--- Начало новой серии ---';
+                    } else {
+                        // Добавление обычной строки события
+                        const row = eventsTable.insertRow();
+                        
+                        const typeCell = row.insertCell(0);
+                        typeCell.textContent = event.type;
+                        
+                        const commentCell = row.insertCell(1);
+                        commentCell.textContent = event.comment;
+                        
+                        const azimuthCell = row.insertCell(2);
+                        azimuthCell.textContent = event.azimuth;
+                        
+                        const timeCell = row.insertCell(3);
+                        timeCell.textContent = event.timeString;
+                        timeCell.className = 'timestamp';
+                        
+                        const timeDiffCell = row.insertCell(4);
+                        timeDiffCell.textContent = event.timeDiff;
+                        timeDiffCell.className = 'time-diff';
+                        
+                        const distanceCell = row.insertCell(5);
+                        distanceCell.textContent = event.distance;
+                        if (event.distance !== '—') {
+                            distanceCell.className = 'distance-info';
+                        }
+                    }
+                });
+            }
+            
+            // Загрузка данных при запуске
+            loadFromLocalStorage();
+        });
+    </script>
+</body>
+</html>
